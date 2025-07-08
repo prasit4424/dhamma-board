@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>หน้าจัดการระบบ - กระดานสนทนาธรรม</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style> body { font-family: 'Sarabun', sans-serif; background-color: #f7fafc; } </style>
+</head>
+<body class="text-gray-800">
+    <div id="admin-panel-container" class="hidden">
+        <header class="bg-white shadow-md">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">Admin Panel</h1>
+                <nav><a href="/" class="text-gray-600 hover:text-amber-600">กลับหน้าหลัก</a></nav>
+            </div>
+        </header>
+        <main class="container mx-auto px-6 py-8">
+            <section id="stats-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8"></section>
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold mb-4">จัดการกระทู้</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100"><tr><th class="p-3">หัวข้อ</th><th class="p-3">ผู้เขียน</th><th class="p-3">จัดการ</th></tr></thead>
+                        <tbody id="posts-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="access-denied" class="hidden text-center p-10">
+        <h1 class="text-3xl font-bold text-red-600 mb-4">Access Denied</h1>
+        <a href="/" class="mt-6 inline-block px-6 py-3 bg-amber-600 text-white rounded-lg">กลับสู่หน้าหลัก</a>
+    </div>
+    <script>
+        const API_URL = 'http://localhost:3001/api';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const userToken = localStorage.getItem('dhamma_token');
+            const userData = localStorage.getItem('dhamma_user');
+            let currentUser = userData ? JSON.parse(userData) : null;
+
+            if (currentUser && currentUser.role === 'admin') {
+                document.getElementById('admin-panel-container').classList.remove('hidden');
+                // ... (JavaScript logic for admin panel)
+            } else {
+                document.getElementById('access-denied').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

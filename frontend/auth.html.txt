@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ / สมัครสมาชิก - กระดานสนทนาธรรม</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #fdfaf6; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="flex flex-col md:flex-row w-full max-w-4xl mx-auto shadow-2xl rounded-2xl overflow-hidden">
+        <div class="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center items-center text-center bg-amber-500 text-white">
+            <img src="https://cdn.pixabay.com/photo/2022/01/05/20/43/buddhism-6918542_960_720.png" alt="โลโก้ธรรมะ" class="w-20 h-20 rounded-full mb-6 border-4 border-white/50">
+            <h1 class="text-4xl font-bold mb-3">ยินดีต้อนรับ</h1>
+            <p class="text-amber-100">สู่ชุมชนแห่งการแบ่งปันและสนทนาธรรม</p>
+            <a href="/" class="mt-8 flex items-center text-sm text-amber-100 hover:text-white transition"><i data-feather="arrow-left" class="w-4 h-4 mr-2"></i>กลับสู่หน้าแรก</a>
+        </div>
+        <div class="w-full md:w-1/2 p-8 md:p-12 bg-white">
+            <div id="notification" class="hidden p-4 mb-4 text-sm rounded-lg"></div>
+            <div id="register-form-container">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">สร้างบัญชีผู้ใช้</h2>
+                <p class="text-gray-500 mb-8">สมัครสมาชิกเพื่อเริ่มตั้งกระทู้</p>
+                <form id="register-form" class="space-y-5">
+                    <div>
+                        <label for="reg-username" class="block text-gray-700 font-semibold mb-2">ชื่อผู้ใช้</label>
+                        <input type="text" id="reg-username" class="w-full px-4 py-3 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="reg-password" class="block text-gray-700 font-semibold mb-2">รหัสผ่าน</label>
+                        <input type="password" id="reg-password" class="w-full px-4 py-3 border rounded-lg" required>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700">สมัครสมาชิก</button>
+                </form>
+                <p class="text-center text-gray-500 mt-6">เป็นสมาชิกอยู่แล้ว? <a href="#login" id="show-login" class="font-semibold text-amber-600 hover:underline">เข้าสู่ระบบที่นี่</a></p>
+            </div>
+            <div id="login-form-container" class="hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-2">เข้าสู่ระบบ</h2>
+                <p class="text-gray-500 mb-8">ยินดีต้อนรับกลับมา</p>
+                <form id="login-form" class="space-y-5">
+                    <div>
+                        <label for="login-username" class="block text-gray-700 font-semibold mb-2">ชื่อผู้ใช้</label>
+                        <input type="text" id="login-username" class="w-full px-4 py-3 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-gray-700 font-semibold mb-2">รหัสผ่าน</label>
+                        <input type="password" id="login-password" class="w-full px-4 py-3 border rounded-lg" required>
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700">เข้าสู่ระบบ</button>
+                </form>
+                <p class="text-center text-gray-500 mt-6">ยังไม่มีบัญชี? <a href="#register" id="show-register" class="font-semibold text-amber-600 hover:underline">สร้างบัญชีใหม่</a></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        feather.replace();
+        const API_URL = 'http://localhost:3001/api';
+        const loginContainer = document.getElementById('login-form-container');
+        const registerContainer = document.getElementById('register-form-container');
+        const showLoginLink = document.getElementById('show-login');
+        const showRegisterLink = document.getElementById('show-register');
+        const registerForm = document.getElementById('register-form');
+        const loginForm = document.getElementById('login-form');
+        const notification = document.getElementById('notification');
+
+        showLoginLink.addEventListener('click', (e) => { e.preventDefault(); registerContainer.classList.add('hidden'); loginContainer.classList.remove('hidden'); });
+        showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); loginContainer.classList.add('hidden'); registerContainer.classList.remove('hidden'); });
+
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = `p-4 mb-4 text-sm rounded-lg ${isError ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+        }
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('reg-username').value;
+            const password = document.getElementById('reg-password').value;
+            try {
+                const res = await fetch(`${API_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                showNotification(data.message);
+                registerForm.reset();
+                setTimeout(() => showLoginLink.click(), 2000);
+            } catch (err) { showNotification(err.message, true); }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                const res = await fetch(`${API_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
+                localStorage.setItem('dhamma_token', data.token);
+                localStorage.setItem('dhamma_user', JSON.stringify(data.user));
+                window.location.href = '/';
+            } catch (err) { showNotification(err.message, true); }
+        });
+    </script>
+</body>
+</html>

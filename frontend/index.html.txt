@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กระดานสนทนาธรรม</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #fdfaf6; }
+        .liked { fill: #ef4444; color: #ef4444; }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="container mx-auto px-4 py-6">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-4 pb-4 border-b-2 border-amber-600/20">
+            <a href="/" class="flex items-center space-x-3 mb-4 md:mb-0">
+                <img src="https://cdn.pixabay.com/photo/2022/01/05/20/43/buddhism-6918542_960_720.png" alt="โลโก้ธรรมะ" class="w-12 h-12 rounded-full object-cover">
+                <h1 class="text-3xl font-bold text-amber-800">กระดานสนทนาธรรม</h1>
+            </a>
+            <nav id="user-nav" class="flex items-center space-x-2"></nav>
+        </header>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <main class="lg:col-span-2 space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-700">กระทู้ล่าสุด</h2>
+                    <button id="create-post-btn" class="flex items-center space-x-2 px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        <i data-feather="plus-circle" class="w-5 h-5"></i>
+                        <span>ตั้งกระทู้ใหม่</span>
+                    </button>
+                </div>
+                <div id="posts-list" class="space-y-6">
+                    <p id="loading-posts" class="text-center text-gray-500">กำลังโหลดกระทู้...</p>
+                </div>
+            </main>
+            <aside id="sidebar" class="lg:col-span-1 space-y-6"></aside>
+        </div>
+        <footer class="text-center mt-12 py-4 border-t border-gray-200">
+            <p class="text-gray-500">&copy; 2024 กระดานสนทนาธรรม. พัฒนาเพื่อเป็นธรรมทาน.</p>
+        </footer>
+    </div>
+    <div id="create-post-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl">
+            <h3 class="text-2xl font-bold mb-4">สร้างกระทู้ใหม่</h3>
+            <form id="create-post-form">
+                <div class="mb-4">
+                    <label for="post-title" class="block text-gray-700 font-semibold mb-2">หัวข้อกระทู้</label>
+                    <input type="text" id="post-title" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-amber-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="post-content" class="block text-gray-700 font-semibold mb-2">เนื้อหา</label>
+                    <textarea id="post-content" rows="6" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-amber-500" required></textarea>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-post-btn" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">ยกเลิก</button>
+                    <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">สร้างกระทู้</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        const API_URL = 'http://localhost:3001/api';
+        const userNav = document.getElementById('user-nav');
+        const postsList = document.getElementById('posts-list');
+        const createPostBtn = document.getElementById('create-post-btn');
+        const sidebar = document.getElementById('sidebar');
+        let currentUser = null;
+        let userToken = null;
+
+        function checkLoginStatus() {
+            userToken = localStorage.getItem('dhamma_token');
+            const userData = localStorage.getItem('dhamma_user');
+            if (userToken && userData) {
+                currentUser = JSON.parse(userData);
+                let adminLink = currentUser.role === 'admin' ? `<a href="admin.html" class="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 text-sm">Admin Panel</a>` : '';
+                userNav.innerHTML = `<a href="profile.html" class="flex items-center space-x-2 mr-2"><img src="${currentUser.profileImageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/32x32/e2e8f0/475569?text=?';" alt="โปรไฟล์" class="w-8 h-8 rounded-full object-cover"><span class="font-semibold">${currentUser.username}</span></a>${adminLink}<button id="logout-btn" class="px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 text-sm">ออกจากระบบ</button>`;
+                document.getElementById('logout-btn').addEventListener('click', logout);
+                createPostBtn.disabled = false;
+            } else {
+                currentUser = null;
+                userNav.innerHTML = `<a href="auth.html" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 shadow-sm">เข้าสู่ระบบ</a><a href="auth.html" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">สมัครสมาชิก</a>`;
+                createPostBtn.disabled = true;
+            }
+            renderSidebar(!!currentUser);
+            fetchPosts();
+        }
+
+        async function fetchPosts() {
+            try {
+                const headers = userToken ? { 'Authorization': `Bearer ${userToken}` } : {};
+                const response = await fetch(`${API_URL}/posts`, { headers });
+                if (!response.ok) throw new Error('ไม่สามารถโหลดข้อมูลได้');
+                const posts = await response.json();
+                postsList.innerHTML = '';
+                if (posts.length === 0) {
+                    postsList.innerHTML = '<p class="text-center text-gray-500">ยังไม่มีกระทู้ในระบบ</p>';
+                    return;
+                }
+                posts.forEach(post => {
+                    const postElement = document.createElement('article');
+                    postElement.className = 'bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 relative';
+                    const likeClass = post.isLiked ? 'liked' : '';
+                    let deleteButtonHTML = '';
+                    if (currentUser && (currentUser.id === post.userId._id || currentUser.role === 'admin')) {
+                        deleteButtonHTML = `<button class="delete-post-btn absolute top-4 right-4 text-gray-400 hover:text-red-500" data-id="${post._id}"><i data-feather="trash-2" class="w-5 h-5"></i></button>`;
+                    }
+                    postElement.innerHTML = `${deleteButtonHTML}<div class="flex items-start space-x-4"><img src="${post.userId.profileImageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/48x48/e2e8f0/475569?text=?';" alt="รูปโปรไฟล์" class="w-12 h-12 rounded-full object-cover"><div><h3 class="text-xl font-bold text-gray-800 mb-1 pr-8"><a href="post.html?id=${post._id}" class="hover:underline">${post.title}</a></h3><p class="text-sm text-gray-500 mb-3">โพสต์โดย <span class="font-semibold text-blue-700">${post.userId.username}</span></p><p class="text-gray-600 leading-relaxed truncate">${post.content}</p><div class="flex items-center space-x-6 mt-4 text-gray-500"><button data-id="${post._id}" class="like-btn flex items-center space-x-1 hover:text-red-500 transition-colors duration-300 ${currentUser ? '' : 'cursor-not-allowed'}" ${currentUser ? '' : 'disabled'}><i data-feather="heart" class="w-5 h-5 ${likeClass}"></i> <span>${post.likes.length}</span></button><a href="post.html?id=${post._id}#comments-section" class="flex items-center space-x-1 hover:text-blue-500"><i data-feather="message-square" class="w-5 h-5"></i> <span>${post.commentCount || 0}</span></a></div></div></div>`;
+                    postsList.appendChild(postElement);
+                });
+                document.querySelectorAll('.like-btn').forEach(button => button.addEventListener('click', handleLikePost));
+                document.querySelectorAll('.delete-post-btn').forEach(button => button.addEventListener('click', handleDeletePost));
+                feather.replace();
+            } catch (error) { postsList.innerHTML = `<p class="text-center text-red-500">${error.message}</p>`; }
+        }
+
+        function renderSidebar(isLoggedIn) {
+            let profileCardHTML = '';
+            if (isLoggedIn) {
+                profileCardHTML = `<div class="bg-white p-6 rounded-xl shadow-lg text-center"><img src="${currentUser.profileImageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/80x80/e2e8f0/475569?text=?';" alt="รูปโปรไฟล์" class="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-4 border-green-200"><h4 class="text-lg font-bold">${currentUser.username}</h4><a href="profile.html" class="text-sm text-amber-600 hover:underline">แก้ไขโปรไฟล์</a></div>`;
+            }
+            const audioPlayerHTML = `<div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-bold mb-4 flex items-center"><i data-feather="music" class="w-5 h-5 mr-2 text-amber-700"></i>เสียงธรรม</h4><div class="space-y-3"><p class="font-semibold text-gray-700">บทสวดทำวัตรเช้า</p><audio controls class="w-full h-10"></audio></div></div>`;
+            sidebar.innerHTML = profileCardHTML + audioPlayerHTML;
+            feather.replace();
+        }
+
+        function logout() {
+            localStorage.removeItem('dhamma_token');
+            localStorage.removeItem('dhamma_user');
+            checkLoginStatus();
+        }
+        
+        async function handleLikePost(event) { /* ... */ }
+        async function handleDeletePost(event) { /* ... */ }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLoginStatus();
+            // ... (Event listeners for modal)
+        });
+    </script>
+</body>
+</html>
